@@ -1,0 +1,145 @@
+Question 5 ----------
+
+After developing my program, I found that my code was able to solve
+mystery1.dat and mystery3.dat.  It could not solve mystery2.dat,
+identifying it as the impossible puzzle.  The problem left was
+formulating a technique to evaluate puzzle difficulty.
+
+My initial thoughts were to simply use solver iterations or compute
+time to measure difficulty.  After careful consideration, it became
+clear that the brute force algorithm used by the solver does not
+represent a human very well.  Sometimes the solver may get lucky, and
+find a solution quickly from its trial-and-error on a board that a
+human may find near-impossible to solve.  To get a better way of
+evaluating difficulty, I had to think about what makes a sudoku hard
+to a human.
+
+The simplest puzzles will only require a basic understanding of the
+game's rules to solve.  In these cases, there is only one possible
+value for each square that the person has to solve.  More challenging
+puzzles require an increasing number of more complex techniques to
+solve effectively.  One of the key factors here is how strictly the
+board is constrained at each move the person has to make.  If there
+are many possible digits that can be entered into a cell, the person
+must keep track of all of those possible trial solutions and see if
+they work out.  So to evaluate the difficulty of a board, we must
+measure how strictly moves are constrained.
+
+A quick and easy way to approximate this is to simply count the number
+of initial cells that are given in the board.  Although this will not
+always be a perfect measure of difficulty, in general a correlation
+between initial empty cells and difficulty is expected.  Based on this
+technique the difficulty of boards in ascending order is: easy,
+medium, mystery3, mystery1.  It is important to note that these were
+each seperated by only one cell difference, meaning that there is not
+much granularity in this measure.  A board marginally harder or easier
+than another could not be detected.
+
+Improving on this method would try to account for cases where
+additional cells are given but the overall constraints on empty cells
+remains low.  One way to do this would be to measure how many moves
+are possible in the initial state of the board.  In this case, a move
+counts as any valid placement of a digit in an empty cell.  A board
+with more initial moves is likely going to be harder to solve as it is
+subject to fewer constraints.  I implemented code to measure this and
+found the same order as before: easy, medium, mystery3, mystery1.
+However, this time, the separation between the difficulty levels was
+more apparant, with atleast a 5 move difference between boards.
+
+This is still not a perfect assessment of difficulty.  Two boards may
+have the same number of initial moves possible but a few moves later
+one may become clear and the other remain cryptic.  Equally, boards
+can become difficult half-way through a solve.  It becomes harder to
+formulate a method that can capture this.  One may seek to measure the
+number of possible moves throughout the entire solve of the board.
+This is challenging/expensive to implement and perhaps unnecessary.
+
+To use our existing solver to measure the difficulty, adjustments
+could be made so that the computer can better capture human
+experience.  Although the computer may get lucky on one solve, and
+unlucky on another, one would expect this to average out when starting
+the solve at every different cell.  Additionally, adding randomness to
+the order of digits that are guessed in each cell removes additional
+bias.
+
+I made an overload function that can take a starting position as an
+argument, and that tracks the number of function calls.  This function
+also removed bias from the order of digit guessing (RESULTS WILL BE
+SLIGHTLY DIFFERENT EACH TIME DUE TO RANDOMNESS).  This quickly exposed
+counting function calls from one starting position to be a bad method
+of analysing difficulty:
+
+    Starting at A1 Number of solve_board() calls for 'mystery1.dat':
+    364758 Number of solve_board() calls for 'mystery3.dat': 10309
+
+    Starting at I2 Number of solve_board() calls for 'mystery1.dat':
+    19723 Number of solve_board() calls for 'mystery3.dat': 1841768
+
+You can see here that the order of the mystery board switches
+depending on starting location.
+
+To try and combat this issue, I ran every possible starting position
+and analysed the results.
+
+The means of the data were:
+
+    Average (mean) number of solve_board() calls for 'easy.dat': 11237
+    Average (mean) number of solve_board() calls for 'medium.dat':
+    29231 Average (mean) number of solve_board() calls for
+    'mystery1.dat': 231995 Average (mean) number of solve_board()
+    calls for 'mystery3.dat': 619827
+
+Order: easy, median, mystery1, mystery3.
+
+The medians of the data were:
+
+    Average (median) number of solve_board() calls for 'easy.dat':
+    3207 Average (median) number of solve_board() calls for
+    'medium.dat': 24064 Average (median) number of solve_board() calls
+    for 'mystery1.dat': 162545 Average (median) number of
+    solve_board() calls for 'mystery3.dat': 103662
+
+Order: easy, median, mystery3, mystery1.
+
+The minimums of the data were:
+
+    Min number of solve_board() calls for 'easy.dat': 196 Min number
+    of solve_board() calls for 'medium.dat': 685 Min number of
+    solve_board() calls for 'mystery1.dat': 1072 Min number of
+    solve_board() calls for 'mystery3.dat': 686
+
+Order: easy, median, mystery3, mystery1.
+
+Which of these is a valid analysis of human difficulty is a difficult
+question to answer.  The file 'Function Calls to Solve Each Board for
+Different Starting Positions.png' contains an ordered plot of the
+number of calls for each position for each board.  Easy and medium
+show clear cut relative difficulty on this plot.  We can see that the
+easiest solves of mystery3 are faster than the easiest of mystery1.
+However, its hardest solves take far more calls than mystery1.  We can
+assume that a human solves the board with some intelligence, not brute
+force.  We could therefore assert that the upper 75% of function call
+values in each case aren't good representations of human behaviour, as
+they are 'worst case scenarios'.  Given this assertion, we could draw
+the conclusion that the correct order of ascending difficulty is:
+
+    easy, medium, mystery3, mystery1
+
+None of these methods perfectly capture human difficulty rating.
+
+An incremental improvement on this approach would be to randomise the
+order of cells visited in the algorithm.  This leads to 81*81!
+different solves per board, a number we cannot reasonably get a sample
+of.  This is still using brute force to try and measure human
+interpretation which is not a good approach.
+
+A perfect solution would involve building a 'human-like' solve that
+uses techniques used by humans to solve a board.  As techniques of
+increasing difficulty are used, the rating can be raised, to
+eventually give a realistic imprssion of how hard a human would find
+it.  This is beyond the scope of this project, so has not been
+attempted in this solution.
+
+
+
+
